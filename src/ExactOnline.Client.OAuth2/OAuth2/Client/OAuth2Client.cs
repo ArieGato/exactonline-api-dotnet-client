@@ -201,7 +201,9 @@ public abstract class OAuth2Client : IClient
 		AccessToken = tokenResponse?.AccessToken;
 		RefreshToken = tokenResponse?.RefreshToken;
 		TokenType = tokenResponse?.TokenType;
-		ExpiresAt = DateTime.Now.AddSeconds(tokenResponse?.ExpiresIn ?? 0 - 5); // subtract 5 seconds to be sure the token isn't expired before the next call is executed
+		int.TryParse(tokenResponse?.ExpiresIn, out var expiresIn);
+		// subtract 5 seconds to be sure the token isn't expired before the next call is executed
+		ExpiresAt = DateTime.Now.AddSeconds(expiresIn - 5);
 
 		OnAfterTokensChanged();
 	}
@@ -243,7 +245,7 @@ public class TokenResponse
 	[JsonPropertyName("refresh_token")]
 	public string? RefreshToken { get; set; }
 	[JsonPropertyName("expires_in")]
-	public int ExpiresIn { get; set; }
+	public string ExpiresIn { get; set; }
 	[JsonPropertyName("token_type")]
 	public string? TokenType { get; set; }
 }
