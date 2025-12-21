@@ -169,13 +169,8 @@ public class Controller<T> : IController<T>, IEntityManager where T : class
 			throw new Exception("Bad Guid: Guid cannot contain '}' or '{'");
 		}
 
-		if (string.IsNullOrEmpty(_keyname))
-		{
-			throw new Exception("Cannot get entity by GUID. This entity does not have a keyname.");
-		}
-
-		// Convert the resonse to an object of the specific type
-		var response = _conn.GetEntity(_keyname!, guid, parameters);
+		// Convert the response to an object of the specific type
+		var response = _conn.GetEntity(_keyname, guid, parameters);
 		response = ApiResponseCleaner.GetJsonObject(response);
 		var entity = EntityConverter.ConvertJsonToObject<T>(response);
 

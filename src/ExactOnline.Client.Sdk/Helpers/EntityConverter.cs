@@ -1,7 +1,8 @@
-﻿using ExactOnline.Client.Sdk.Controllers;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
+using ExactOnline.Client.Sdk.Controllers;
 using ExactOnline.Client.Sdk.Exceptions;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace ExactOnline.Client.Sdk.Helpers;
 
@@ -17,7 +18,10 @@ public static class EntityConverter
 	{
 		try
 		{
-			return JsonConvert.DeserializeObject<dynamic>(json);
+			var jsonNode = JsonNode.Parse(json)
+			          ?? throw new IncorrectJsonException();
+
+			return MutableJsonDynamic.FromNode(jsonNode);
 		}
 		catch
 		{
@@ -32,13 +36,14 @@ public static class EntityConverter
 	{
 		try
 		{
-			JArray array = JsonConvert.DeserializeObject<dynamic>(json)
-				?? throw new IncorrectJsonException();
-			return [.. array];
+			var arr = JsonNode.Parse(json) as JsonArray
+			          ?? throw new IncorrectJsonException();
+
+			return arr.Select(n => MutableJsonDynamic.FromNode(n)).ToList();
 		}
-		catch
+		catch (JsonException exception)
 		{
-			throw new IncorrectJsonException();
+			throw new IncorrectJsonException("Json is incorrect.", exception);
 		}
 	}
 
@@ -47,7 +52,7 @@ public static class EntityConverter
 	/// </summary>
 	/// <param name="obj">Dynamic Object to Convert</param>
 	/// <returns>Json String</returns>
-	public static string ConvertDynamicObjectToJson(dynamic obj) => JsonConvert.SerializeObject(obj);
+	public static string ConvertDynamicObjectToJson(dynamic obj) => JsonSerializer.Serialize(obj);
 
 	/// <summary>
 	/// Converts an Exact Online Object to Json
@@ -55,8 +60,11 @@ public static class EntityConverter
 	/// <typeparam name="T">Type of Exact.Web.Api.Models</typeparam>
 	/// <param name="entity">entity</param>
 	/// <returns>Json String</returns>
-	public static string ConvertObjectToJson<T>(T entity) =>
-		JsonConvert.SerializeObject(entity, new ExactOnlineJsonConverter());
+	public static string ConvertObjectToJson<T>(T entity)
+	{
+		var options = GetJsonSerializerOptions();
+		return JsonSerializer.Serialize(entity, options);
+	}
 
 	/// <summary>
 	/// Converts an Object to Json for Updating
@@ -66,11 +74,13 @@ public static class EntityConverter
 	/// <typeparam name="T">Type of Exact.Web.Api.Models</typeparam>
 	/// <param name="originalEntity">Original State of the Entity</param>
 	/// <param name="entity">Current State of the Entity</param>
-	/// <param name="entityControllerDelegate">Delegate for entitycontroller</param>
+	/// <param name="getEntityControllerFunc">Delegate for entity controller</param>
 	/// <returns>Json String</returns>
-	public static string ConvertObjectToJson<T>(T originalEntity, T entity, Func<object, EntityController?>? getEntityControllerFunc)
-		where T: notnull =>
-		JsonConvert.SerializeObject(entity, new ExactOnlineJsonConverter(originalEntity, getEntityControllerFunc));
+	public static string ConvertObjectToJson<T>(T originalEntity, T entity, Func<object, EntityController> getEntityControllerFunc)
+	{
+		var options = GetJsonSerializerOptions(originalEntity, getEntityControllerFunc);
+		return JsonSerializer.Serialize(entity, options);
+	}
 
 	/// <summary>
 	/// Convert Json to Exact Online Object
@@ -83,11 +93,13 @@ public static class EntityConverter
 	{
 		try
 		{
-			return JsonConvert.DeserializeObject<T>(json) ?? throw new IncorrectJsonException("DeserializeObject returned null.");
+			var options = GetDeserializerOptions();
+			return JsonSerializer.Deserialize<T>(json, options)
+				?? throw new IncorrectJsonException("DeserializeObject returned null.");
 		}
-		catch (Exception)
+		catch (Exception exception)
 		{
-			throw new IncorrectJsonException();
+			throw new IncorrectJsonException("An exception occurred while converting JSON to object.", exception);
 		}
 	}
 
@@ -101,11 +113,50 @@ public static class EntityConverter
 	{
 		try
 		{
-			return JsonConvert.DeserializeObject<List<T>>(json, new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore });
+			if (string.IsNullOrEmpty(json))
+			{
+				return null;
+			}
+
+			var options = GetDeserializerOptions();
+			return JsonSerializer.Deserialize<List<T>>(json, options);
 		}
 		catch (Exception)
 		{
 			throw new IncorrectJsonException("An error occurred while processing the json string. Possibly the result is too big. Please make a more specific query.");
 		}
+	}
+
+	private static JsonSerializerOptions GetDeserializerOptions()
+	{
+		var options = new JsonSerializerOptions
+		{
+			DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never,
+			WriteIndented = false
+		};
+		options.Converters.Add(new MicrosoftDateTimeConverter());
+		return options;
+	}
+
+	private static JsonSerializerOptions GetJsonSerializerOptions()
+	{
+		var options = new JsonSerializerOptions
+		{
+			DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never,
+			WriteIndented = false
+		};
+		options.Converters.Add(new ExactOnlineJsonConverter());
+		return options;
+	}
+
+	private static JsonSerializerOptions GetJsonSerializerOptions<TEntity>(TEntity entity, Func<object, EntityController> getEntityControllerFunc)
+	{
+		var options = new JsonSerializerOptions
+		{
+			DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never,
+			WriteIndented = false
+		};
+		options.Converters.Add(new ExactOnlineJsonConverter(entity, getEntityControllerFunc));
+		return options;
 	}
 }

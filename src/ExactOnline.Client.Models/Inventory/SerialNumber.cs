@@ -1,5 +1,3 @@
-using Newtonsoft.Json;
-
 namespace ExactOnline.Client.Models.Inventory;
 
 [SupportedActionsSDK(false, true, false, false)]
@@ -47,7 +45,7 @@ public class SerialNumber
 	/// <summary>Remarks</summary>
 	public string? Remarks { get; set; }
 	/// <summary>Human readable serial number</summary>
-	[JsonProperty(PropertyName = "SerialNumber")]
+	[JsonPropertyName("SerialNumber")]
 	public string? SerialNumberName { get; set; }
 	/// <summary>Start date of effective period for serial number</summary>
 	public DateTime? StartDate { get; set; }

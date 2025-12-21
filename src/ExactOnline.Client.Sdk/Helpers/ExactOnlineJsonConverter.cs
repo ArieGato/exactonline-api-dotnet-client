@@ -1,13 +1,14 @@
 ﻿using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using ExactOnline.Client.Models;
 using ExactOnline.Client.Sdk.Controllers;
-using Newtonsoft.Json;
 
 namespace ExactOnline.Client.Sdk.Helpers;
 
-public class ExactOnlineJsonConverter : JsonConverter
+public class ExactOnlineJsonConverter : JsonConverter<object>
 {
 	private readonly Func<object, EntityController?>? _getEntityControllerFunc;
 	private readonly bool _createUpdateJson;
@@ -26,18 +27,18 @@ public class ExactOnlineJsonConverter : JsonConverter
 	/// <summary>
 	/// Indicates if an entity can be converted to Json
 	/// </summary>
-	/// <param name="objectType">Type of the entity</param>
+	/// <param name="typeToConvert">Type of the entity</param>
 	/// <returns>True if the entity can be converted</returns>
-	public override bool CanConvert(Type objectType) =>
-		objectType.ToString().Contains("ExactOnline.Client.Models");
+	public override bool CanConvert(Type typeToConvert) =>
+		typeToConvert.ToString().Contains("ExactOnline.Client.Models");
 
-	public override object ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer) =>
+	public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
 		throw new NotImplementedException();
 
 	/// <summary>
 	/// Converts the object to Json
 	/// </summary>
-	public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+	public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
 	{
 		if (value is null)
 		{
@@ -46,7 +47,7 @@ public class ExactOnlineJsonConverter : JsonConverter
 
 		var writeableFields = GetWriteableFields(value);
 		var guidsToSkip = writeableFields.Where(x => x.GetValue(value) is Guid guid
-								&& guid == Guid.Empty).ToArray();
+													&& guid == Guid.Empty).ToArray();
 
 		// Remove the fields to skip from the writeable fields
 		writeableFields = writeableFields.Except(writeableFields.Join(guidsToSkip, e => e.GetValue(value), m => m.GetValue(value), (e, m) => e)).ToArray();
@@ -59,8 +60,8 @@ public class ExactOnlineJsonConverter : JsonConverter
 		writer.WriteStartObject();
 		foreach (var field in writeableFields)
 		{
-			var jsonPropertyAttribute = field.GetCustomAttribute<JsonPropertyAttribute>();
-			var fieldName = jsonPropertyAttribute?.PropertyName ?? field.Name;
+			var jsonPropertyAttribute = field.GetCustomAttribute<JsonPropertyNameAttribute>();
+			var fieldName = jsonPropertyAttribute?.Name ?? field.Name;
 
 			var fieldValue = field.GetValue(value);
 			fieldValue = CheckDateFormat(fieldValue);
@@ -68,16 +69,16 @@ public class ExactOnlineJsonConverter : JsonConverter
 			if (fieldValue != null && fieldValue.GetType().IsGenericType && fieldValue is IEnumerable enumerable)
 			{
 				// Write property value for linked entities
-				WriteLinkedEntities(writer, fieldName, enumerable);
+				WriteLinkedEntities(writer, fieldName, enumerable, options);
 			}
 			else
 			{
 				// Write property value for normal key value pair
 				writer.WritePropertyName(fieldName);
-				writer.WriteValue(fieldValue);
+				JsonSerializer.Serialize(writer, fieldValue, fieldValue?.GetType() ?? typeof(object), options);
 			}
 		}
-		writer.WriteEnd();
+		writer.WriteEndObject();
 	}
 
 	private PropertyInfo[] GetWriteableFields(object value)
@@ -88,8 +89,8 @@ public class ExactOnlineJsonConverter : JsonConverter
 		{
 			var updatedfields = GetUpdatedFields(writeableFields, value); // If Json for update: Get only updated fields
 			writeableFields = (from f in writeableFields
-							   join up in updatedfields on f.Name equals up.Name
-							   select f).ToArray();
+						   join up in updatedfields on f.Name equals up.Name
+						   select f).ToArray();
 		}
 
 		return writeableFields;
@@ -160,10 +161,10 @@ public class ExactOnlineJsonConverter : JsonConverter
 	private static string ConvertDateToEdmDate(DateTime date) =>
 		string.Format("{0:yyyy-MM-ddTHH:mm}", date);
 
-	private void WriteLinkedEntities(JsonWriter writer, string fieldname, IEnumerable fieldValue)
+	private void WriteLinkedEntities(Utf8JsonWriter writer, string fieldname, IEnumerable fieldValue, JsonSerializerOptions options)
 	{
 		var linkedEntities = fieldValue.Cast<object>().ToArray();
-		if (linkedEntities.Length < 0)
+		if (linkedEntities.Length < 1)
 		{
 			return;
 		}
@@ -172,34 +173,37 @@ public class ExactOnlineJsonConverter : JsonConverter
 		writer.WriteStartArray();
 		foreach (var item in fieldValue)
 		{
-			writer.WriteRawValue(JsonConvert.SerializeObject(item, GetCorrectConverter(item)));
+			JsonSerializer.Serialize(writer, item, item?.GetType() ?? typeof(object), GetCorrectOptions(item, options));
 		}
 		writer.WriteEndArray();
 	}
 
-	private ExactOnlineJsonConverter GetCorrectConverter(object entity)
+	private JsonSerializerOptions GetCorrectOptions(object entity, JsonSerializerOptions baseOptions)
 	{
-		ExactOnlineJsonConverter converter;
+		var options = new JsonSerializerOptions(baseOptions);
 
+		// first remove existing ExactOnlineJsonConverter
+		var converter = options.Converters.FirstOrDefault(c => c is ExactOnlineJsonConverter);
+		options.Converters.Remove(converter);
+
+		// add new ExactOnlineJsonConverter with correct parameters
 		if (_createUpdateJson)
 		{
 			if (_getEntityControllerFunc!(entity) is { } entityController)
 			{
-				// Entity is an existing entity. Create JsonConverter for updating an existing entity
-				converter = new ExactOnlineJsonConverter(entityController.OriginalEntity, _getEntityControllerFunc);
+				options.Converters.Add(new ExactOnlineJsonConverter(entityController.OriginalEntity, _getEntityControllerFunc));
 			}
 			else
 			{
-				// Entity is a new entity. Create JsonConverter for sending only changed fields
 				var emptyEntity = Activator.CreateInstance(entity.GetType());
-				converter = new ExactOnlineJsonConverter(emptyEntity, _getEntityControllerFunc);
+				options.Converters.Add(new ExactOnlineJsonConverter(emptyEntity, _getEntityControllerFunc));
 			}
 		}
 		else
 		{
-			converter = new ExactOnlineJsonConverter();
+			options.Converters.Add(new ExactOnlineJsonConverter());
 		}
 
-		return converter;
+		return options;
 	}
 }
