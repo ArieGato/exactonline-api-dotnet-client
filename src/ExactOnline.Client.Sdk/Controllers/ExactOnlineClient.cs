@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using ExactOnline.Client.Models.Current;
+﻿using ExactOnline.Client.Models.Current;
 using ExactOnline.Client.Sdk.Helpers;
 using ExactOnline.Client.Sdk.Models;
 using Microsoft.Extensions.Logging;

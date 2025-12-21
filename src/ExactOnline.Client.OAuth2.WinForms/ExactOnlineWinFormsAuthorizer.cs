@@ -9,11 +9,34 @@ public class ExactOnlineWinFormsAuthorizer(string clientId, string clientSecret,
 		{
 			var authorizationUri = await GetLoginLinkUriAsync(ct: ct);
 
-			var loginDialog = new LoginForm(new(authorizationUri), new(Configuration.RedirectUri));
+			string? code = null;
+			Exception? uiError = null;
 
-			loginDialog.ShowDialog();
+			var t = new Thread(() =>
+			{
+				try
+				{
+					using var loginDialog = new LoginForm(new(authorizationUri), new(Configuration.RedirectUri));
 
-			if (loginDialog.AuthorizationCode is string code && !string.IsNullOrWhiteSpace(code))
+					// Show the modal dialog on this STA thread
+					loginDialog.ShowDialog();
+
+					code = loginDialog.AuthorizationCode;
+				}
+				catch (Exception ex)
+				{
+					uiError = ex;
+				}
+			});
+
+			t.SetApartmentState(ApartmentState.STA);
+			t.Start();
+			t.Join();
+
+			if (uiError != null)
+				throw new AggregateException(uiError);
+
+			if (!string.IsNullOrWhiteSpace(code))
 			{
 				await ProcessAuthorizationAsync(code, ct);
 			}
