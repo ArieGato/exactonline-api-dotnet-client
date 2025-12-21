@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -9,14 +10,14 @@ namespace ExactOnline.Client.Sdk.Helpers;
 
 public class ExactOnlineJsonConverter : JsonConverter<object>
 {
-	private readonly Func<object, EntityController> _getEntityControllerFunc;
+	private readonly Func<object, EntityController?>? _getEntityControllerFunc;
 	private readonly bool _createUpdateJson;
-	private readonly object _originalEntity;
+	private readonly object? _originalEntity;
 
 	public ExactOnlineJsonConverter() =>
 		_createUpdateJson = false;
 
-	public ExactOnlineJsonConverter(object originalObject, Func<object, EntityController> getEntityControllerFunc)
+	public ExactOnlineJsonConverter(object originalObject, Func<object, EntityController?>? getEntityControllerFunc)
 	{
 		_getEntityControllerFunc = getEntityControllerFunc;
 		_originalEntity = originalObject;
@@ -39,7 +40,12 @@ public class ExactOnlineJsonConverter : JsonConverter<object>
 	/// </summary>
 	public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
 	{
-		var writeableFields = GetWriteableFields(value, _createUpdateJson);
+		if (value is null)
+		{
+			return;
+		}
+
+		var writeableFields = GetWriteableFields(value);
 		var guidsToSkip = writeableFields.Where(x => x.GetValue(value) is Guid guid
 													&& guid == Guid.Empty).ToArray();
 
@@ -75,11 +81,11 @@ public class ExactOnlineJsonConverter : JsonConverter<object>
 		writer.WriteEndObject();
 	}
 
-	private PropertyInfo[] GetWriteableFields(object value, bool jsonForUpdate)
+	private PropertyInfo[] GetWriteableFields(object value)
 	{
 		var writeableFields = value.GetType().GetProperties().Where(IsWriteField).ToArray();
 
-		if (jsonForUpdate)
+		if (_createUpdateJson)
 		{
 			var updatedfields = GetUpdatedFields(writeableFields, value); // If Json for update: Get only updated fields
 			writeableFields = (from f in writeableFields
@@ -111,12 +117,14 @@ public class ExactOnlineJsonConverter : JsonConverter<object>
 	/// </summary>
 	private bool IsUpdatedField(object objectToConvert, PropertyInfo pi)
 	{
+		Debug.Assert(_originalEntity is not null, "_originalEntity should never be null here");
+
 		var returnValue = false;
 
-		var originalvalue = _originalEntity.GetType().GetProperty(pi.Name).GetValue(_originalEntity) ?? "null";
+		var originalvalue = _originalEntity!.GetType().GetProperty(pi.Name).GetValue(_originalEntity) ?? "null";
 		var currentvalue = pi.GetValue(objectToConvert) ?? "null";
 
-		if (currentvalue is ICollection collection && currentvalue.GetType() != typeof(byte[]))
+		if (currentvalue is ICollection collection && currentvalue.GetType() != typeof(byte[]) && _getEntityControllerFunc is not null)
 		{
 			foreach (var entity in collection)
 			{
@@ -181,8 +189,7 @@ public class ExactOnlineJsonConverter : JsonConverter<object>
 		// add new ExactOnlineJsonConverter with correct parameters
 		if (_createUpdateJson)
 		{
-			var entityController = _getEntityControllerFunc(entity);
-			if (entityController != null)
+			if (_getEntityControllerFunc!(entity) is { } entityController)
 			{
 				options.Converters.Add(new ExactOnlineJsonConverter(entityController.OriginalEntity, _getEntityControllerFunc));
 			}

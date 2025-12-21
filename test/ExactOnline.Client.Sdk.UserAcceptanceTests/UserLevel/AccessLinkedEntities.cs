@@ -5,7 +5,7 @@ namespace ExactOnline.Client.Sdk.UserAcceptanceTests.UserLevel;
 [TestClass]
 public class AccessLinkedEntities
 {
-	public TestContext TestContext { get; set; }
+	public TestContext TestContext { get; set; } = default!;
 
 	[TestMethod]
 	[TestCategory("User Acceptance Tests")]
@@ -20,7 +20,8 @@ public class AccessLinkedEntities
 			.Get();
 		Assert.IsNotNull(salesinvoices);
 
-		var salesinvoicelines = (List<SalesInvoiceLine>)salesinvoices.First().SalesInvoiceLines;
+		var salesinvoicelines = salesinvoices.First().SalesInvoiceLines;
+		Assert.IsNotNull(salesinvoicelines);
 		Assert.IsNotEmpty(salesinvoicelines);
 	}
 }

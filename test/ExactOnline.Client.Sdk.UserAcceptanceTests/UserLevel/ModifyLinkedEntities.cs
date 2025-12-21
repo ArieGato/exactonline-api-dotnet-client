@@ -8,7 +8,7 @@ namespace ExactOnline.Client.Sdk.UserAcceptanceTests.UserLevel;
 [TestClass]
 public class ModifyLinkedEntities
 {
-	public TestContext TestContext { get; set; }
+	public TestContext TestContext { get; set; } = default!;
 
 	[TestMethod]
 	[TestCategory("User Acceptance Tests")]
@@ -24,8 +24,8 @@ public class ModifyLinkedEntities
 			.Expand("SalesInvoiceLines")
 			.GetEntity(salesInvoiceId);
 
-		var salesInvoiceLines = (List<SalesInvoiceLine>)salesInvoice.SalesInvoiceLines;
-		var orginialInvoiceline = salesInvoiceLines[0];
+		Assert.IsNotNull(salesInvoice.SalesInvoiceLines);
+		var orginialInvoiceline = salesInvoice.SalesInvoiceLines.First();
 
 		// The original invoice line is not managed because it's taken as related entity from the sales invoice.
 		// Call the api to get a managed invoice line that can be updated.

@@ -13,7 +13,7 @@ public static class EntityConverter
 	/// <summary>
 	/// Convert single object to Dynamic object
 	/// </summary>
-	public static dynamic ConvertJsonToDynamicObject(string json)
+	public static dynamic? ConvertJsonToDynamicObject(string json)
 	{
 		try
 		{
@@ -88,6 +88,7 @@ public static class EntityConverter
 	/// <param name="json">Json String</param>
 	/// <returns>Exact Online Object</returns>
 	public static T ConvertJsonToObject<T>(string json)
+		where T : notnull
 	{
 		try
 		{
@@ -111,7 +112,7 @@ public static class EntityConverter
 	/// <typeparam name="T">Specifies the type</typeparam>
 	/// <param name="json">Json Array</param>
 	/// <returns>List of specified type</returns>
-	public static List<T> ConvertJsonArrayToObjectList<T>(string json)
+	public static List<T>? ConvertJsonArrayToObjectList<T>(string json)
 	{
 		try
 		{
