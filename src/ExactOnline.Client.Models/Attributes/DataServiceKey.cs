@@ -1,5 +1,3 @@
-using Newtonsoft.Json;
-
 namespace ExactOnline.Client.Models;
 
 public sealed class DataServiceKey : Attribute
@@ -13,6 +11,6 @@ public sealed class DataServiceKey : Attribute
 	public DataServiceKey(string dataServiceKey, string dataServiceKey2, string dataServiceKey3) =>
 		DataServiceKeyName = dataServiceKey;
 
-	[JsonProperty(PropertyName = "dataServiceKey")]
+	[JsonPropertyName("dataServiceKey")]
 	public string DataServiceKeyName { get; set; }
 }

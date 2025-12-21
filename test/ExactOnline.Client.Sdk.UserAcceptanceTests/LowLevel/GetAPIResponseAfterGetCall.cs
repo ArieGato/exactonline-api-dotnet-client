@@ -1,5 +1,5 @@
-﻿using ExactOnline.Client.Sdk.Helpers;
-using Newtonsoft.Json;
+﻿using System.Text.Json.Nodes;
+using ExactOnline.Client.Sdk.Helpers;
 
 namespace ExactOnline.Client.Sdk.UserAcceptanceTests.LowLevel;
 
@@ -17,7 +17,6 @@ public class GetApiResponseAfterGetCall
 	[TestCategory("User Acceptance Tests")]
 	public async Task GetApiResponseAfterGetCall_Succeeds()
 	{
-		//APIConnector connector = new APIConnector(accesstoken);
 		var toc = new TestObjectsCreator();
 		var conn = new ApiConnection(toc.GetApiConnector(), TestObjectsCreator.UriCrmAccount(await toc.GetCurrentDivisionAsync(TestContext.CancellationToken)));
 
@@ -26,11 +25,9 @@ public class GetApiResponseAfterGetCall
 		{
 			throw new Exception("Return from API was empty");
 		}
-		else
-		{
-			// Check if the response is a JSON Value
-			// Throws exception of not JSON
-			JsonConvert.DeserializeObject(result);
-		}
+
+		// Check if the response is a JSON Value
+		// Throws an exception when invalid JSON
+		JsonNode.Parse(result);
 	}
 }

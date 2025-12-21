@@ -8,7 +8,7 @@ public class BatchNumber
 	[SDKFieldType(FieldType.ReadOnly)]
 	public double? AvailableQuantity { get; set; }
 	/// <summary>Human readable batch number</summary>
-	[Newtonsoft.Json.JsonProperty(PropertyName = "BatchNumber")]
+	[JsonPropertyName("BatchNumber")]
 	public string BatchNumberName { get; set; }
 	/// <summary>Creation date</summary>
 	[SDKFieldType(FieldType.ReadOnly)]

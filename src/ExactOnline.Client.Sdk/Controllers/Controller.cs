@@ -173,7 +173,7 @@ public class Controller<T> : IController<T>, IEntityManager where T : class
 			throw new Exception("Bad Guid: Guid cannot contain '}' or '{'");
 		}
 
-		// Convert the resonse to an object of the specific type
+		// Convert the response to an object of the specific type
 		var response = _conn.GetEntity(_keyname, guid, parameters);
 		response = ApiResponseCleaner.GetJsonObject(response);
 		var entity = EntityConverter.ConvertJsonToObject<T>(response);
