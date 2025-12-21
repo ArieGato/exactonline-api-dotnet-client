@@ -1,8 +1,5 @@
-using System;
 using System.Collections.Specialized;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Web;
 using OAuth2.Configuration;
 using OAuth2.Infrastructure;
 using RestSharp;
@@ -236,16 +233,4 @@ public abstract class OAuth2Client : IClient
 			});
 		}
 	}
-}
-
-public class TokenResponse
-{
-	[JsonPropertyName("access_token")]
-	public string? AccessToken { get; set; }
-	[JsonPropertyName("refresh_token")]
-	public string? RefreshToken { get; set; }
-	[JsonPropertyName("expires_in")]
-	public string ExpiresIn { get; set; }
-	[JsonPropertyName("token_type")]
-	public string? TokenType { get; set; }
 }

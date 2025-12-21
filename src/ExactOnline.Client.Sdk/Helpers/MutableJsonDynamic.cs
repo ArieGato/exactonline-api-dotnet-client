@@ -14,16 +14,14 @@ public sealed class MutableJsonDynamic : DynamicObject, IEnumerable
 
 	private JsonNode _node;
 
-	private MutableJsonDynamic(JsonNode node) => _node = node;
-
-	public static dynamic Parse(string json) => new MutableJsonDynamic(JsonNode.Parse(json));
+	private MutableJsonDynamic(JsonNode node)
+	{
+		_node = node ?? throw new ArgumentNullException(nameof(node));
+	}
 
 	public static dynamic FromNode(JsonNode node) => new MutableJsonDynamic(node);
 
-	/// <summary>Returns the underlying JsonNode (useful for serialization).</summary>
-	public JsonNode Node => _node;
-
-	public override bool TryGetMember(GetMemberBinder binder, out object result)
+	public override bool TryGetMember(GetMemberBinder binder, out object? result)
 	{
 		if (_node is JsonObject obj && obj.TryGetPropertyValue(binder.Name, out var value))
 		{
@@ -42,7 +40,7 @@ public sealed class MutableJsonDynamic : DynamicObject, IEnumerable
 		return true;
 	}
 
-	public override bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object result)
+	public override bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object? result)
 	{
 		result = null;
 
@@ -137,12 +135,6 @@ public sealed class MutableJsonDynamic : DynamicObject, IEnumerable
 
 	private void EnsureObject()
 	{
-		if (_node is null)
-		{
-			_node = new JsonObject();
-			return;
-		}
-
 		if (_node is JsonObject)
 			return;
 
@@ -150,7 +142,7 @@ public sealed class MutableJsonDynamic : DynamicObject, IEnumerable
 		_node = new JsonObject();
 	}
 
-	private static object Wrap(JsonNode node)
+	private static object? Wrap(JsonNode? node)
 	{
 		if (node is null) return null;
 
@@ -163,18 +155,20 @@ public sealed class MutableJsonDynamic : DynamicObject, IEnumerable
 		return new MutableJsonDynamic(node);
 	}
 
-	private static object UnwrapPrimitive(JsonNode node)
+	private static object? UnwrapPrimitive(JsonNode? node)
 	{
 		if (node is not JsonValue v) return null;
 
 		if (v.TryGetValue<string>(out var s))
 		{
-			var match = Regex.Match(s ?? "");
+			var match = Regex.Match(s);
 			if (!match.Success)
 				return s;
 
 			var ms = long.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
-			return DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime.ToString(CultureInfo.InvariantCulture);
+			return DateTimeOffset
+				.FromUnixTimeMilliseconds(ms)
+				.UtcDateTime.ToString(CultureInfo.InvariantCulture);
 		}
 
 		if (v.TryGetValue<bool>(out var b)) return b;
@@ -185,32 +179,26 @@ public sealed class MutableJsonDynamic : DynamicObject, IEnumerable
 		return v.ToJsonString();
 	}
 
-	private static JsonNode ToJsonNode(object value)
+	private static JsonNode? ToJsonNode(object? value)
 	{
-		if (value is null) return null;
-
-		// If assigning another wrapper, use its underlying node
-		if (value is MutableJsonDynamic mjd) return mjd.Node;
-
-		// If user assigns a JsonNode directly
-		if (value is JsonNode node) return node;
-
-		// If user assigns a JsonElement, convert it
-		if (value is JsonElement element)
-			return JsonNode.Parse(element.GetRawText());
-
-		// For primitives and POCOs, let STJ convert
-		return JsonValue.Create(value);
+		return value switch
+		{
+			null => null,
+			MutableJsonDynamic mjd => mjd._node,
+			JsonNode node => node,
+			JsonElement element => JsonNode.Parse(element.GetRawText()),
+			_ => JsonValue.Create(value)
+		};
 	}
 
 	public IEnumerator GetEnumerator()
 	{
-		if (_node is JsonArray arr)
-			return arr.Select(Wrap).GetEnumerator();
-
-		if (_node is JsonObject obj)
-			return obj.Select(kvp => new KeyValuePair<string, object>(kvp.Key, Wrap(kvp.Value))).GetEnumerator();
-
-		return Enumerable.Empty<object>().GetEnumerator();
+		return _node switch
+		{
+			JsonArray arr => arr.Select(Wrap).GetEnumerator(),
+			JsonObject obj => obj.Select(kvp => new KeyValuePair<string, object?>(kvp.Key, Wrap(kvp.Value)))
+				.GetEnumerator(),
+			_ => Enumerable.Empty<object>().GetEnumerator()
+		};
 	}
 }

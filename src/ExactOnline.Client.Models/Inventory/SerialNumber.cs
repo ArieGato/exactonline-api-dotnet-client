@@ -44,9 +44,9 @@ public class SerialNumber
 	public string? ModifierFullName { get; set; }
 	/// <summary>Remarks</summary>
 	public string? Remarks { get; set; }
-    /// <summary>Human readable serial number</summary>
-    [JsonPropertyName("SerialNumber")]
-    public string? SerialNumberName { get; set; }
+	/// <summary>Human-readable serial number</summary>
+	[JsonPropertyName("SerialNumber")]
+	public string? SerialNumberName { get; set; }
 	/// <summary>Start date of effective period for serial number</summary>
 	public DateTime? StartDate { get; set; }
 	/// <summary>ID of storage location where serial number is available</summary>

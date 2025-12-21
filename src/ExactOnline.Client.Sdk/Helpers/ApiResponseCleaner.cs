@@ -23,13 +23,11 @@ public static class ApiResponseCleaner
 
 		try
 		{
-			JsonNode? root = JsonNode.Parse(response);
+			var root = JsonNode.Parse(response);
 			if (root is null)
 				throw new IncorrectJsonException("JSON is null.");
 
-			// Equivalent to jtoken["d"] as JObject
-			JsonObject? dObj = root["d"] as JsonObject;
-			if (dObj is null)
+			if (root["d"] is not JsonObject dObj)
 				throw new IncorrectJsonException("Property 'd' is missing or not an object.");
 
 			return GetJsonFromObject(dObj);
@@ -92,29 +90,15 @@ public static class ApiResponseCleaner
 
 	public static string GetJsonArray(string response)
 	{
-		var oldCulture = Thread.CurrentThread.CurrentCulture;
-		Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-
 		try
 		{
-			JsonNode? root = JsonNode.Parse(response);
-
-			JsonArray? results = null;
-
-			// Equivalent to: if (jtoken["d"] is JObject dObject && dObject["results"] is JArray resultsArray)
-			if (root?["d"] is JsonObject dObject && dObject["results"] is JsonArray resultsArray)
+			var root = JsonNode.Parse(response);
+			var results = root?["d"] switch
 			{
-				results = resultsArray;
-			}
-			// Equivalent to: else if (jtoken["d"] is JArray dArray)
-			else if (root?["d"] is JsonArray dArray)
-			{
-				results = dArray;
-			}
-			else
-			{
-				throw new Exception("No ['d']['results'] token found in response");
-			}
+				JsonArray array => array,
+				JsonObject dObject when dObject["results"] is JsonArray array => array,
+				_ => throw new Exception("No ['d']['results'] token found in response")
+			};
 
 			return GetJsonFromArray(results);
 		}
@@ -126,66 +110,58 @@ public static class ApiResponseCleaner
 		{
 			throw new IncorrectJsonException(e.Message);
 		}
-		finally
-		{
-			Thread.CurrentThread.CurrentCulture = oldCulture;
-		}
 	}
 
 	private static string GetJsonFromObject(JsonObject jsonObject)
 	{
-		var json = "{";
+		var json = new System.Text.StringBuilder();
+		json.Append('{');
 
 		foreach (var entry in jsonObject)
 		{
-			JsonNode? value = entry.Value;
+			var value = entry.Value;
 
 			// Equivalent to: entry.Value is JValue
 			if (value is JsonValue jsonValue)
 			{
-				json += "\"" + entry.Key + "\":";
+				json.Append('\"').Append(entry.Key).Append("\":");
 
-				object? clrValue = jsonValue.GetValue<object?>();
-
+				var clrValue = jsonValue.GetValue<object?>();
 				if (clrValue == null)
 				{
-					json += "null";
+					json.Append("null");
 				}
 				else
 				{
-					json += JsonSerializer.Serialize(clrValue);
+					json.Append(JsonSerializer.Serialize(clrValue));
 				}
 
-				json += ",";
+				json.Append(',');
 			}
-			// Equivalent to:
-			// entry.Value is JObject subcollection
-			// && subcollection.ContainsKey("results")
-			// && subcollection["results"] is JArray
 			else if (
 				value is JsonObject subObject &&
-				subObject.TryGetPropertyValue("results", out JsonNode? resultsNode) &&
+				subObject.TryGetPropertyValue("results", out var resultsNode) &&
 				resultsNode is JsonArray results
 			)
 			{
-				var subjson = GetJsonFromArray(results);
+				var subJson = GetJsonFromArray(results);
 
-				if (subjson.Length > 0)
+				if (subJson.Length > 0)
 				{
-					json += "\"" + entry.Key + "\":";
-					json += subjson;
-					json += ",";
+					json.Append('\"').Append(entry.Key).Append("\":");
+					json.Append(subJson);
+					json.Append(',');
 				}
 			}
 		}
 
 		// Remove trailing comma if present
-		if (json.EndsWith(","))
-			json = json.Remove(json.Length - 1, 1);
+		if (json.Length > 1 && json[json.Length - 1] == ',')
+			json.Length--;
 
-		json += "}";
+		json.Append('}');
 
-		return json;
+		return json.ToString();
 	}
 
 	private static string GetJsonFromArray(JsonArray results)

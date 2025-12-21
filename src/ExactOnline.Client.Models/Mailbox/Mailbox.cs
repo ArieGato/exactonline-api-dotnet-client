@@ -27,9 +27,9 @@ public class Mailbox
 	public string? ForDivisionDescription { get; set; }
 	/// <summary>Primary key</summary>
 	public Guid ID { get; set; }
-    /// <summary>E-mail address-like format, for example johndoe@exactonline.nl</summary>
-    [JsonPropertyName("Mailbox")]
-    public string? MailboxName { get; set; }
+	/// <summary>E-mail address-like format, for example johndoe@exactonline.nl</summary>
+	[JsonPropertyName("Mailbox")]
+	public string? MailboxName { get; set; }
 	/// <summary>Last modified date</summary>
 	[SDKFieldType(FieldType.ReadOnly)]
 	public DateTime? Modified { get; set; }
