@@ -17,7 +17,7 @@ public class ExactOnlineJsonConverter : JsonConverter<object>
 	public ExactOnlineJsonConverter() =>
 		_createUpdateJson = false;
 
-	public ExactOnlineJsonConverter(object originalObject, Func<object, EntityController?>? getEntityControllerFunc)
+	public ExactOnlineJsonConverter(object? originalObject, Func<object, EntityController?>? getEntityControllerFunc)
 	{
 		_getEntityControllerFunc = getEntityControllerFunc;
 		_originalEntity = originalObject;

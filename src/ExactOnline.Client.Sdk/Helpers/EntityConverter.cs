@@ -14,7 +14,7 @@ public static class EntityConverter
 	/// <summary>
 	/// Convert single object to Dynamic object
 	/// </summary>
-	public static dynamic? ConvertJsonToDynamicObject(string json)
+	public static dynamic ConvertJsonToDynamicObject(string json)
 	{
 		try
 		{
@@ -39,7 +39,10 @@ public static class EntityConverter
 			var arr = JsonNode.Parse(json) as JsonArray
 			          ?? throw new IncorrectJsonException();
 
-			return arr.Select(n => MutableJsonDynamic.FromNode(n)).ToList();
+			return arr
+				.Where(n => n is not null)
+				.Select(n => MutableJsonDynamic.FromNode(n!))
+				.ToList();
 		}
 		catch (JsonException exception)
 		{
@@ -88,14 +91,13 @@ public static class EntityConverter
 	/// <typeparam name="T">Type of Exact.Web.Api.Models</typeparam>
 	/// <param name="json">Json String</param>
 	/// <returns>Exact Online Object</returns>
-	public static T ConvertJsonToObject<T>(string json)
+	public static T? ConvertJsonToObject<T>(string? json)
 		where T : notnull
 	{
 		try
 		{
 			var options = GetDeserializerOptions();
-			return JsonSerializer.Deserialize<T>(json, options)
-				?? throw new IncorrectJsonException("DeserializeObject returned null.");
+			return JsonSerializer.Deserialize<T>(json!, options);
 		}
 		catch (Exception exception)
 		{
@@ -109,17 +111,17 @@ public static class EntityConverter
 	/// <typeparam name="T">Specifies the type</typeparam>
 	/// <param name="json">Json Array</param>
 	/// <returns>List of specified type</returns>
-	public static List<T>? ConvertJsonArrayToObjectList<T>(string json)
+	public static List<T> ConvertJsonArrayToObjectList<T>(string? json)
 	{
 		try
 		{
 			if (string.IsNullOrEmpty(json))
 			{
-				return null;
+				return [];
 			}
 
 			var options = GetDeserializerOptions();
-			return JsonSerializer.Deserialize<List<T>>(json, options);
+			return JsonSerializer.Deserialize<List<T>>(json!, options) ?? [];
 		}
 		catch (Exception)
 		{
