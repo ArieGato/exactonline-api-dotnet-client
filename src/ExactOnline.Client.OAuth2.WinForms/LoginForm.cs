@@ -33,7 +33,7 @@ public partial class LoginForm : Form
 				browserExecutableFolder: null,
 				userDataFolder: userDataFolder);
 			await webView.EnsureCoreWebView2Async(env);
-			webView.CoreWebView2.Navigate(AuthorizationCode);
+			webView.CoreWebView2.Navigate(AuthorizationUri.AbsoluteUri);
 		}
 		catch (Exception ex)
 		{

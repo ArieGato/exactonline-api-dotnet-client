@@ -76,10 +76,6 @@ public static class ApiResponseCleaner
 		{
 			throw new IncorrectJsonException(e.Message);
 		}
-		catch (JsonException e)
-		{
-			throw new IncorrectJsonException(e.Message);
-		}
 		catch (Exception e)
 		{
 			throw new IncorrectJsonException(e.Message);
@@ -106,11 +102,7 @@ public static class ApiResponseCleaner
 
 			return GetJsonFromArray(results);
 		}
-		catch (JsonException e)
-		{
-			throw new IncorrectJsonException(e.Message);
-		}
-		catch (JsonException e)
+		catch (Exception e)
 		{
 			throw new IncorrectJsonException(e.Message);
 		}

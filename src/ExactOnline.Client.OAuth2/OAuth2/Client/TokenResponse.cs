@@ -9,7 +9,7 @@ public class TokenResponse
 	[JsonPropertyName("refresh_token")]
 	public string? RefreshToken { get; set; }
 	[JsonPropertyName("expires_in")]
-	public string ExpiresIn { get; set; }
+	public string? ExpiresIn { get; set; }
 	[JsonPropertyName("token_type")]
 	public string? TokenType { get; set; }
 }

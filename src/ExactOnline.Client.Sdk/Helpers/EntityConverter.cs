@@ -78,7 +78,7 @@ public static class EntityConverter
 	/// <param name="entity">Current State of the Entity</param>
 	/// <param name="getEntityControllerFunc">Delegate for entity controller</param>
 	/// <returns>Json String</returns>
-	public static string ConvertObjectToJson<T>(T originalEntity, T entity, Func<object, EntityController> getEntityControllerFunc)
+	public static string ConvertObjectToJson<T>(T originalEntity, T entity, Func<object, EntityController?>? getEntityControllerFunc)
 	{
 		var options = GetJsonSerializerOptions(originalEntity, getEntityControllerFunc);
 		return JsonSerializer.Serialize(entity, options);
@@ -155,7 +155,7 @@ public static class EntityConverter
 		return options;
 	}
 
-	private static JsonSerializerOptions GetJsonSerializerOptions<TEntity>(TEntity entity, Func<object, EntityController> getEntityControllerFunc)
+	private static JsonSerializerOptions GetJsonSerializerOptions<TEntity>(TEntity entity, Func<object, EntityController?>? getEntityControllerFunc)
 	{
 		var options = new JsonSerializerOptions
 		{

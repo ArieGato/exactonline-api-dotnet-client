@@ -14,8 +14,8 @@ public class Controller<T> : IController<T>, IEntityManager where T : class
 	private readonly Dictionary<string, EntityController> _entityControllers = [];
 	private readonly IApiConnection _conn;
 	private readonly Func<Type, IEntityManager>? _getEntityManager;
-	private readonly string? _keyname;
-	private string? _expandfield;
+	private readonly string _keyname;
+	private string _expandfield;
 
 	/// <summary>
 	/// Create new instance of the controller

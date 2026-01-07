@@ -86,12 +86,12 @@ public class ApiResponseCleanerTest
 		                        }
 		                        """;
 		var token = ApiResponseCleaner.GetSkipToken(response);
-		Assert.AreEqual(string.Empty, token);
+		Assert.IsNull(token);
 	}
 
 	[TestCategory("Unit Test")]
 	[TestMethod]
-	public void ApiResponseCleaner_GetSkipToken_WithoutNextKey_ReturnsEmptyString()
+	public void ApiResponseCleaner_GetSkipToken_WithoutNextKey_ReturnsNull()
 	{
 		const string response = """
 		                        {
@@ -101,7 +101,7 @@ public class ApiResponseCleanerTest
 		                        }
 		                        """;
 		var token = ApiResponseCleaner.GetSkipToken(response);
-		Assert.AreEqual(string.Empty, token);
+		Assert.IsNull(token);
 	}
 
 	[TestCategory("Unit Test")]

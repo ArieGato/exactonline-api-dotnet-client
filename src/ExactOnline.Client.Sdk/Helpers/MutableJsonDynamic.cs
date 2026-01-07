@@ -95,7 +95,7 @@ public sealed class MutableJsonDynamic : DynamicObject, IEnumerable
 		return false;
 	}
 
-	public override bool TryConvert(ConvertBinder binder, out object result)
+	public override bool TryConvert(ConvertBinder binder, out object? result)
 	{
 		// Convert primitive nodes into CLR types when assigned to concrete types
 		var val = UnwrapPrimitive(_node);
@@ -124,7 +124,7 @@ public sealed class MutableJsonDynamic : DynamicObject, IEnumerable
 		}
 	}
 
-	public override string ToString() => _node?.ToJsonString(new JsonSerializerOptions { WriteIndented = false });
+	public override string ToString() => _node.ToJsonString(new JsonSerializerOptions { WriteIndented = false });
 
 	public string ToJson(bool indented = true)
 	{
