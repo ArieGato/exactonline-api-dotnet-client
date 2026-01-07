@@ -32,10 +32,6 @@ public static class ApiResponseCleaner
 
 			return GetJsonFromObject(dObj);
 		}
-		catch (JsonException e)
-		{
-			throw new IncorrectJsonException(e.Message);
-		}
 		catch (Exception e)
 		{
 			throw new IncorrectJsonException(e.Message);
@@ -164,14 +160,16 @@ public static class ApiResponseCleaner
 	{
 		var json = "[";
 
-		if (results != null && results.Count > 0)
+		if (results.Count > 0)
 		{
 			foreach (var entity in results)
 			{
-				if (entity is JsonObject obj)
+				if (entity is not JsonObject obj)
 				{
-					json += GetJsonFromObject(obj) + ",";
+					throw new IncorrectJsonException("Entity in results is not a JObject");
 				}
+
+				json += GetJsonFromObject(obj) + ",";
 			}
 
 			// Remove last comma

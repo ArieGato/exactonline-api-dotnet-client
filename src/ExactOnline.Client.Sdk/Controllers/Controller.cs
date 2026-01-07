@@ -14,8 +14,8 @@ public class Controller<T> : IController<T>, IEntityManager where T : class
 	private readonly Dictionary<string, EntityController> _entityControllers = [];
 	private readonly IApiConnection _conn;
 	private readonly Func<Type, IEntityManager>? _getEntityManager;
-	private readonly string _keyname;
-	private string _expandfield;
+	private readonly string? _keyname;
+	private string? _expandfield;
 
 	/// <summary>
 	/// Create new instance of the controller
@@ -169,8 +169,13 @@ public class Controller<T> : IController<T>, IEntityManager where T : class
 			throw new Exception("Bad Guid: Guid cannot contain '}' or '{'");
 		}
 
-		// Convert the response to an object of the specific type
-		var response = _conn.GetEntity(_keyname, guid, parameters);
+		if (string.IsNullOrEmpty(_keyname))
+		{
+			throw new Exception("Cannot get entity by GUID. This entity does not have a keyname.");
+		}
+
+		// Convert the resonse to an object of the specific type
+		var response = _conn.GetEntity(_keyname!, guid, parameters);
 		response = ApiResponseCleaner.GetJsonObject(response);
 		var entity = EntityConverter.ConvertJsonToObject<T>(response);
 

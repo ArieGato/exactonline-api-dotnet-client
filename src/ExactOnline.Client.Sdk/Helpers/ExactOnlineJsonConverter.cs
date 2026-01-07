@@ -38,7 +38,7 @@ public class ExactOnlineJsonConverter : JsonConverter<object>
 	/// <summary>
 	/// Converts the object to Json
 	/// </summary>
-	public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+	public override void Write(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
 	{
 		if (value is null)
 		{
@@ -46,8 +46,8 @@ public class ExactOnlineJsonConverter : JsonConverter<object>
 		}
 
 		var writeableFields = GetWriteableFields(value);
-		var guidsToSkip = writeableFields.Where(x => x.GetValue(value) is Guid guid
-													&& guid == Guid.Empty).ToArray();
+		var guidsToSkip = writeableFields.Where(x => x.GetValue(value) is Guid guid &&
+		                                             guid == Guid.Empty).ToArray();
 
 		// Remove the fields to skip from the writeable fields
 		writeableFields = writeableFields.Except(writeableFields.Join(guidsToSkip, e => e.GetValue(value), m => m.GetValue(value), (e, m) => e)).ToArray();
@@ -87,9 +87,9 @@ public class ExactOnlineJsonConverter : JsonConverter<object>
 
 		if (_createUpdateJson)
 		{
-			var updatedfields = GetUpdatedFields(writeableFields, value); // If Json for update: Get only updated fields
+			var updatedFields = GetUpdatedFields(writeableFields, value); // If Json for update: Get only updated fields
 			writeableFields = (from f in writeableFields
-						   join up in updatedfields on f.Name equals up.Name
+						   join up in updatedFields on f.Name equals up.Name
 						   select f).ToArray();
 		}
 
@@ -121,10 +121,10 @@ public class ExactOnlineJsonConverter : JsonConverter<object>
 
 		var returnValue = false;
 
-		var originalvalue = _originalEntity!.GetType().GetProperty(pi.Name).GetValue(_originalEntity) ?? "null";
-		var currentvalue = pi.GetValue(objectToConvert) ?? "null";
+		var originalValue = _originalEntity!.GetType().GetProperty(pi.Name)?.GetValue(_originalEntity) ?? "null";
+		var currentValue = pi.GetValue(objectToConvert) ?? "null";
 
-		if (currentvalue is ICollection collection && currentvalue.GetType() != typeof(byte[]) && _getEntityControllerFunc is not null)
+		if (currentValue is ICollection collection && currentValue.GetType() != typeof(byte[]) && _getEntityControllerFunc is not null)
 		{
 			foreach (var entity in collection)
 			{
@@ -137,7 +137,7 @@ public class ExactOnlineJsonConverter : JsonConverter<object>
 		}
 		else
 		{
-			returnValue = !originalvalue.Equals(currentvalue);
+			returnValue = !originalValue.Equals(currentValue);
 		}
 
 		return returnValue;
@@ -146,7 +146,7 @@ public class ExactOnlineJsonConverter : JsonConverter<object>
 	/// <summary>
 	/// Check if datetime. If so, convert to EdmDate
 	/// </summary>
-	private static object CheckDateFormat(object fieldValue)
+	private static object? CheckDateFormat(object? fieldValue)
 	{
 		if (fieldValue is DateTime dateTime)
 		{
@@ -158,10 +158,9 @@ public class ExactOnlineJsonConverter : JsonConverter<object>
 	/// <summary>
 	/// Converts datetime to required format
 	/// </summary>
-	private static string ConvertDateToEdmDate(DateTime date) =>
-		string.Format("{0:yyyy-MM-ddTHH:mm}", date);
+	private static string ConvertDateToEdmDate(DateTime date) => $"{date:yyyy-MM-ddTHH:mm}";
 
-	private void WriteLinkedEntities(Utf8JsonWriter writer, string fieldname, IEnumerable fieldValue, JsonSerializerOptions options)
+	private void WriteLinkedEntities(Utf8JsonWriter writer, string fieldName, IEnumerable fieldValue, JsonSerializerOptions options)
 	{
 		var linkedEntities = fieldValue.Cast<object>().ToArray();
 		if (linkedEntities.Length < 1)
@@ -169,7 +168,7 @@ public class ExactOnlineJsonConverter : JsonConverter<object>
 			return;
 		}
 
-		writer.WritePropertyName(fieldname);
+		writer.WritePropertyName(fieldName);
 		writer.WriteStartArray();
 		foreach (var item in fieldValue)
 		{
