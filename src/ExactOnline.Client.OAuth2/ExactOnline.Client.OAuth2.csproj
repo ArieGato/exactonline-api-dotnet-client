@@ -5,7 +5,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Newtonsoft.Json" />
 		<PackageReference Include="RestSharp" />
 		<PackageReference Include="System.Text.Encodings.Web" />
 		<PackageReference Include="System.Text.Json" />

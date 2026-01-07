@@ -1,5 +1,3 @@
-using Newtonsoft.Json;
-
 namespace ExactOnline.Client.Models.CRM;
 
 [SupportedActionsSDK(true, true, true, true)]
@@ -15,7 +13,7 @@ public class BankAccount
 	[SDKFieldType(FieldType.ReadOnly)]
 	public Guid? Bank { get; set; }
 	/// <summary>The bank account number</summary>
-	[JsonProperty(PropertyName = "BankAccount")]
+	[JsonPropertyName("BankAccount")]
 	public string? BankAccountName { get; set; }
 	/// <summary>Name of the holder of the bank account, as known by the bank</summary>
 	public string? BankAccountHolderName { get; set; }

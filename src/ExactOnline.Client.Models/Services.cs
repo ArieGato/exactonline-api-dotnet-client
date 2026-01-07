@@ -31,7 +31,6 @@ using ExactOnline.Client.Models.Users;
 using ExactOnline.Client.Models.VAT;
 using ExactOnline.Client.Models.Webhooks;
 using ExactOnline.Client.Models.Workflow;
-using Newtonsoft.Json;
 using CRMDocument = ExactOnline.Client.Models.CRM.Document;
 using DocDocument = ExactOnline.Client.Models.Documents;
 using HRMDivision = ExactOnline.Client.Models.HRM.Division;
@@ -44,7 +43,7 @@ namespace ExactOnline.Client;
 
 public class Services
 {
-	[JsonProperty(PropertyName = "services")]
+	[JsonPropertyName("services")]
 	public Dictionary<string, string> ServicesDictionary = [];
 
 	public Services()

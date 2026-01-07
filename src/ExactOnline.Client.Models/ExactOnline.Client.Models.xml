@@ -6903,7 +6903,7 @@
             <summary>Remarks</summary>
         </member>
         <member name="P:ExactOnline.Client.Models.Inventory.SerialNumber.SerialNumberName">
-            <summary>Human readable serial number</summary>
+            <summary>Human-readable serial number</summary>
         </member>
         <member name="P:ExactOnline.Client.Models.Inventory.SerialNumber.StartDate">
             <summary>Start date of effective period for serial number</summary>

@@ -2,9 +2,9 @@
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using ExactOnline.Client.Models;
 using ExactOnline.Client.Models.Sync;
-using Newtonsoft.Json;
 
 namespace ExactOnline.Client.Sdk.Sync;
 
@@ -221,7 +221,7 @@ public class ModelInfo
 	private FieldInfo[] GetFields() =>
 		(from p in _modelType.GetProperties()
 		 where p.PropertyType == typeof(string) || !typeof(IEnumerable).IsAssignableFrom(p.PropertyType)
-		 let fieldName = p.GetCustomAttribute<JsonPropertyAttribute>()?.PropertyName ?? p.Name
+		 let fieldName = p.GetCustomAttribute<JsonPropertyNameAttribute>()?.Name ?? p.Name
 		 select new FieldInfo(
 			 fieldName,
 			 p,

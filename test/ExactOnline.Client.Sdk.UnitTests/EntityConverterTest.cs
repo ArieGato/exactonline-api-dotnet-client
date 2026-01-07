@@ -38,7 +38,8 @@ public class EntityConverterTest
 	public void EntityConverter_ConvertJsonToObjectList_WithEmptyJson_Fails()
 	{
 		var accounts = EntityConverter.ConvertJsonArrayToObjectList<Account>(string.Empty);
-		Assert.IsNull(accounts);
+		Assert.IsNotNull(accounts);
+		Assert.IsEmpty(accounts);
 	}
 
 	[TestCategory("Unit Test")]
@@ -287,9 +288,9 @@ public class EntityConverterTest
 	[TestMethod]
 	public void EntityConverter_ConvertJsonToObjectWithNull_ReturnsNull()
 	{
-		var action = () => EntityConverter.ConvertJsonToObject<SalesInvoice>(null!);
+		var result = EntityConverter.ConvertJsonToObject<SalesInvoice>(null!);
 
-		Assert.ThrowsExactly<IncorrectJsonException>(action);
+		Assert.IsNull(result);
 	}
 
 	[TestCategory("Unit Test")]

@@ -19,7 +19,26 @@ public partial class LoginForm : Form
 		: this()
 	{
 		(AuthorizationUri, _redirectUri) = (authorizationUri, redirectUri);
-		webView.Source = AuthorizationUri;
+
+		Load += LoginForm_Load;
+	}
+
+	private async void LoginForm_Load(object? sender, EventArgs e)
+	{
+		try
+		{
+			var userDataFolder = Path.Combine(Path.GetTempPath(), "ExactOnline.WebView2");
+
+			var env = await CoreWebView2Environment.CreateAsync(
+				browserExecutableFolder: null,
+				userDataFolder: userDataFolder);
+			await webView.EnsureCoreWebView2Async(env);
+			webView.CoreWebView2.Navigate(AuthorizationUri.AbsoluteUri);
+		}
+		catch (Exception ex)
+		{
+			MessageBox.Show(ex.ToString(), "WebView2 init failed");
+		}
 	}
 
 	private void WebView_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)

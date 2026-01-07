@@ -76,7 +76,7 @@ public class ApiResponseCleanerTest
 
 	[TestCategory("Unit Test")]
 	[TestMethod]
-	public void ApiResponseCleaner_GetSkipToken_WithoutSkipToken_ReturnsNull()
+	public void ApiResponseCleaner_GetSkipToken_WithoutSkipToken_ReturnsEmptyString()
 	{
 		const string response = """
 		                        {
@@ -91,7 +91,7 @@ public class ApiResponseCleanerTest
 
 	[TestCategory("Unit Test")]
 	[TestMethod]
-	public void ApiResponseCleaner_GetSkipToken_WithoutNextKey_ReturnsEmptyString()
+	public void ApiResponseCleaner_GetSkipToken_WithoutNextKey_ReturnsNull()
 	{
 		const string response = """
 		                        {

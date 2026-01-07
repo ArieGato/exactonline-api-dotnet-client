@@ -1,11 +1,11 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using ExactOnline.Client.Sdk.Exceptions;
 using ExactOnline.Client.Sdk.Interfaces;
 using ExactOnline.Client.Sdk.Models;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace ExactOnline.Client.Sdk.Helpers;
 
@@ -288,7 +288,7 @@ public class ApiConnector(Func<CancellationToken, Task<string>> accessTokenFunc,
 		var messageError = default(ServerMessage);
 		try
 		{
-			messageError = JsonConvert.DeserializeObject<ServerMessage>(messageFromServer);
+			messageError = JsonSerializer.Deserialize<ServerMessage>(messageFromServer);
 		}
 		catch { /* the response might not be a json payload */ }
 

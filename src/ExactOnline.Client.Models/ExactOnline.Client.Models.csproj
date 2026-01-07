@@ -6,7 +6,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Newtonsoft.Json" />
+		<Using Include="System.Text.Json.Serialization" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="System.Text.Json" />
 	</ItemGroup>
 
 </Project>

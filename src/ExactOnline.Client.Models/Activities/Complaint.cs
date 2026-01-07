@@ -1,5 +1,3 @@
-using Newtonsoft.Json;
-
 namespace ExactOnline.Client.Models.Activities;
 
 [SupportedActionsSDK(true, true, false, false)]
@@ -19,7 +17,7 @@ public class Complaint
 	[SDKFieldType(FieldType.ReadOnly)]
 	public IEnumerable<Workflow.RequestAttachment>? Attachments { get; set; }
 	/// <summary>A short description of the complaint</summary>
-	[JsonProperty(PropertyName = "Complaint")]
+	[JsonPropertyName("Complaint")]
 	public string? ComplaintName { get; set; }
 	/// <summary>The contact person that is related to the complaint</summary>
 	public Guid? Contact { get; set; }

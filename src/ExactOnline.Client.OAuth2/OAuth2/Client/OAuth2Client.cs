@@ -1,7 +1,5 @@
 using System.Collections.Specialized;
-using System.Web;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
 using OAuth2.Configuration;
 using OAuth2.Infrastructure;
 using RestSharp;
@@ -13,11 +11,6 @@ namespace OAuth2.Client;
 /// </summary>
 public abstract class OAuth2Client : IClient
 {
-	private const string AccessTokenKey = "access_token";
-	private const string RefreshTokenKey = "refresh_token";
-	private const string ExpiresKey = "expires_in";
-	private const string TokenTypeKey = "token_type";
-
 	private readonly IRequestFactory _factory;
 
 	/// <summary>
@@ -198,42 +191,22 @@ public abstract class OAuth2Client : IClient
 
 		var response = await client.ExecuteAndVerifyAsync(request, ct).ConfigureAwait(false);
 
-		AccessToken = ParseTokenResponse(response.Content, AccessTokenKey);
-		if (string.IsNullOrEmpty(AccessToken))
-			throw new UnexpectedResponseException(AccessTokenKey);
+		if (response?.Content == null)
+			throw new UnexpectedResponseException("Response content is null.");
 
-		if (ParseTokenResponse(response.Content, RefreshTokenKey) is string refreshToken && !string.IsNullOrWhiteSpace(refreshToken))
-			RefreshToken = refreshToken;
-
-		TokenType = ParseTokenResponse(response.Content, TokenTypeKey);
-
-		if (int.TryParse(ParseTokenResponse(response.Content, ExpiresKey), out int expiresIn))
-			ExpiresAt = DateTime.Now.AddSeconds(expiresIn - 5); // subtract 5 seconds to be sure the token isn't expired before the next call is executed
+		var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(response.Content);
+		AccessToken = tokenResponse?.AccessToken;
+		RefreshToken = tokenResponse?.RefreshToken;
+		TokenType = tokenResponse?.TokenType;
+		int.TryParse(tokenResponse?.ExpiresIn, out var expiresIn);
+		// subtract 5 seconds to be sure the token isn't expired before the next call is executed
+		ExpiresAt = DateTime.Now.AddSeconds(expiresIn - 5);
 
 		OnAfterTokensChanged();
 	}
 
 	protected virtual void OnAfterTokensChanged()
 	{
-	}
-
-	protected virtual string? ParseTokenResponse(string? content, string key)
-	{
-		if (string.IsNullOrEmpty(content) || string.IsNullOrEmpty(key))
-			return null;
-
-		try
-		{
-			// response can be sent in JSON format
-			var token = JObject.Parse(content!).SelectToken(key);
-			return token?.ToString();
-		}
-		catch (JsonReaderException)
-		{
-			// or it can be in "query string" format (param1=val1&param2=val2)
-			var collection = HttpUtility.ParseQueryString(content);
-			return collection[key];
-		}
 	}
 
 	protected virtual void BeforeGetAccessToken(BeforeAfterRequestArgs args)

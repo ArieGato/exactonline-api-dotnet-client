@@ -1,8 +1,8 @@
 ﻿using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using ExactOnline.Client.Sdk.Exceptions;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace ExactOnline.Client.Sdk.Helpers;
 
@@ -23,12 +23,14 @@ public static class ApiResponseCleaner
 
 		try
 		{
-			var jtoken = JsonConvert.DeserializeObject<JToken>(response, new JsonSerializerSettings { DateFormatHandling = DateFormatHandling.MicrosoftDateFormat });
-			if (jtoken?["d"] is not JObject jobject)
-			{
-				throw new Exception("No 'd' property found in response");
-			}
-			return GetJsonFromObject(jobject);
+			var root = JsonNode.Parse(response);
+			if (root is null)
+				throw new IncorrectJsonException("JSON is null.");
+
+			if (root["d"] is not JsonObject dObj)
+				throw new IncorrectJsonException("Property 'd' is missing or not an object.");
+
+			return GetJsonFromObject(dObj);
 		}
 		catch (Exception e)
 		{
@@ -44,23 +46,31 @@ public static class ApiResponseCleaner
 	{
 		var oldCulture = Thread.CurrentThread.CurrentCulture;
 		Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+
 		string? token = null;
+
 		try
 		{
-			var jtoken = JsonConvert.DeserializeObject<JToken>(response, new JsonSerializerSettings { DateFormatHandling = DateFormatHandling.MicrosoftDateFormat });
-			if (jtoken?["d"] is JObject dObject)
+			JsonNode? root = JsonNode.Parse(response);
+
+			// Equivalent to: jtoken["d"] is JObject dObject
+			if (root?["d"] is JsonObject dObject)
 			{
-				if (dObject.ContainsKey("__next"))
+				// Equivalent to: dObject.ContainsKey("__next")
+				if (dObject.TryGetPropertyValue("__next", out JsonNode? nextNode) && nextNode is not null)
 				{
-					var next = dObject["__next"]!.ToString();
+					var next = nextNode.ToString();
 
 					// Skiptoken has format "$skiptoken=xyz" in the url and we want to extract xyz.
-					var match = Regex.Match(next ?? "", @"\$skiptoken=([^&#]*)");
+					var match = Regex.Match(next, @"\$skiptoken=([^&#]*)");
 
-					// Extract the skip token
 					token = match.Success ? match.Groups[1].Value : null;
 				}
 			}
+		}
+		catch (JsonException e)
+		{
+			throw new IncorrectJsonException(e.Message);
 		}
 		catch (Exception e)
 		{
@@ -70,103 +80,103 @@ public static class ApiResponseCleaner
 		{
 			Thread.CurrentThread.CurrentCulture = oldCulture;
 		}
+
 		return token;
 	}
 
-	/// <summary>
-	/// Fetch Json Array (Json within ['d']['results']) from response
-	/// </summary>
 	public static string GetJsonArray(string response)
 	{
-		var oldCulture = Thread.CurrentThread.CurrentCulture;
-		Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 		try
 		{
-			var results = default(JArray);
-			var jtoken = JsonConvert.DeserializeObject(response, new JsonSerializerSettings { DateFormatHandling = DateFormatHandling.MicrosoftDateFormat }) as JToken;
-			if (jtoken?["d"] is JObject dObject && dObject["results"] is JArray resultsArray)
+			var root = JsonNode.Parse(response);
+			var results = root?["d"] switch
 			{
-				results = resultsArray;
-			}
-			else if (jtoken?["d"] is JArray dArray)
-			{
-				results = dArray;
-			}
-			else
-			{
-				throw new Exception("No ['d']['results'] token found in response");
-			}
+				JsonArray array => array,
+				JsonObject dObject when dObject["results"] is JsonArray array => array,
+				_ => throw new Exception("No ['d']['results'] token found in response")
+			};
+
 			return GetJsonFromArray(results);
 		}
 		catch (Exception e)
 		{
 			throw new IncorrectJsonException(e.Message);
 		}
-		finally
-		{
-			Thread.CurrentThread.CurrentCulture = oldCulture;
-		}
 	}
 
-	/// <summary>
-	/// Converts key/value pairs to json
-	/// </summary>
-	private static string GetJsonFromObject(JObject jObject)
+	private static string GetJsonFromObject(JsonObject jsonObject)
 	{
-		var json = "{";
+		var json = new System.Text.StringBuilder();
+		json.Append('{');
 
-		foreach (var entry in jObject)
+		foreach (var entry in jsonObject)
 		{
-			if (entry.Value is JValue jValue)
+			var value = entry.Value;
+
+			// Equivalent to: entry.Value is JValue
+			if (value is JsonValue jsonValue)
 			{
-				// Entry is of type keyvaluepair
-				json += "\"" + entry.Key + "\":";
-				if (jValue.Value == null)
+				json.Append('\"').Append(entry.Key).Append("\":");
+
+				var clrValue = jsonValue.GetValue<object?>();
+				if (clrValue == null)
 				{
-					json += "null";
+					json.Append("null");
 				}
 				else
 				{
-					json += JsonConvert.ToString(jValue.Value);
+					json.Append(JsonSerializer.Serialize(clrValue));
 				}
-				json += ",";
-			}
-			else if (entry.Value is JObject subcollection && subcollection.ContainsKey("results") && subcollection["results"] is JArray results)
-			{
-				// Create linked entities json
-				var subjson = GetJsonFromArray(results);
 
-				if (subjson.Length > 0)
+				json.Append(',');
+			}
+			else if (
+				value is JsonObject subObject &&
+				subObject.TryGetPropertyValue("results", out var resultsNode) &&
+				resultsNode is JsonArray results
+			)
+			{
+				var subJson = GetJsonFromArray(results);
+
+				if (subJson.Length > 0)
 				{
-					json += "\"" + entry.Key + "\":";
-					json += subjson;
-					json += ",";
+					json.Append('\"').Append(entry.Key).Append("\":");
+					json.Append(subJson);
+					json.Append(',');
 				}
 			}
 		}
 
-		json = json.Remove(json.Length - 1, 1); // Remove last comma
-		json += "}";
+		// Remove trailing comma if present
+		if (json.Length > 1 && json[json.Length - 1] == ',')
+			json.Length--;
 
-		return json;
+		json.Append('}');
+
+		return json.ToString();
 	}
 
-	private static string GetJsonFromArray(JArray results)
+	private static string GetJsonFromArray(JsonArray results)
 	{
 		var json = "[";
+
 		if (results.Count > 0)
 		{
 			foreach (var entity in results)
 			{
-				if (entity is not JObject jobject)
+				if (entity is not JsonObject obj)
 				{
-					throw new IncorrectJsonException("Entity in results is not a JObject");	
+					throw new IncorrectJsonException("Entity in results is not a JObject");
 				}
-				json += GetJsonFromObject(jobject) + ",";
+
+				json += GetJsonFromObject(obj) + ",";
 			}
 
-			json = json.Remove(json.Length - 1, 1); // Remove last comma
+			// Remove last comma
+			if (json.EndsWith(","))
+				json = json.Remove(json.Length - 1, 1);
 		}
+
 		json += "]";
 		return json;
 	}
