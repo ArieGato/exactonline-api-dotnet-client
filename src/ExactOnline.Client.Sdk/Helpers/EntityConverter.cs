@@ -1,6 +1,5 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
 using ExactOnline.Client.Sdk.Controllers;
 using ExactOnline.Client.Sdk.Exceptions;
 
@@ -96,6 +95,11 @@ public static class EntityConverter
 	{
 		try
 		{
+			if (string.IsNullOrEmpty(json))
+			{
+				return default;
+			}
+
 			var options = GetDeserializerOptions();
 			return JsonSerializer.Deserialize<T>(json!, options);
 		}

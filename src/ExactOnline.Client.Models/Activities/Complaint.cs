@@ -18,7 +18,7 @@ public class Complaint
 	public IEnumerable<Workflow.RequestAttachment>? Attachments { get; set; }
 	/// <summary>A short description of the complaint</summary>
 	[JsonPropertyName("Complaint")]
-	public string ComplaintName { get; set; }
+	public string? ComplaintName { get; set; }
 	/// <summary>The contact person that is related to the complaint</summary>
 	public Guid? Contact { get; set; }
 	/// <summary>The name of the contact person</summary>

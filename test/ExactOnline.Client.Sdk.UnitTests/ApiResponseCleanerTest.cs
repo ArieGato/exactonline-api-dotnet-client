@@ -76,7 +76,7 @@ public class ApiResponseCleanerTest
 
 	[TestCategory("Unit Test")]
 	[TestMethod]
-	public void ApiResponseCleaner_GetSkipToken_WithoutSkipToken_ReturnsNull()
+	public void ApiResponseCleaner_GetSkipToken_WithoutSkipToken_ReturnsEmptyString()
 	{
 		const string response = """
 		                        {
@@ -86,7 +86,7 @@ public class ApiResponseCleanerTest
 		                        }
 		                        """;
 		var token = ApiResponseCleaner.GetSkipToken(response);
-		Assert.IsNull(token);
+		Assert.AreEqual(string.Empty, token);
 	}
 
 	[TestCategory("Unit Test")]
@@ -101,7 +101,7 @@ public class ApiResponseCleanerTest
 		                        }
 		                        """;
 		var token = ApiResponseCleaner.GetSkipToken(response);
-		Assert.IsNull(token);
+		Assert.AreEqual(string.Empty, token);
 	}
 
 	[TestCategory("Unit Test")]
